@@ -14,10 +14,11 @@ def add_tokens(tokenizer, dataset_file):
             # gpt-2 was pretrained to treat spaces as part of the token.
             # This means each word after the first word needs a space in front of it.
             for i, word in enumerate(words):
-                if i == 0 or word == "<eos>":
-                    tokens.add(word)
-                else:
-                    tokens.add(f" {word}")
+                if word != "<eos>":
+                    if i == 0:
+                        tokens.add(word)
+                    else:
+                        tokens.add(f" {word}")
 
     tokenizer.add_tokens(list(tokens))
     return tokenizer

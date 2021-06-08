@@ -133,3 +133,9 @@ dmypy.json
 
 # WandB
 wandb/
+
+# ML
+checkpoint*/
+
+# Mac OS
+.DS_Store

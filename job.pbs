@@ -1,0 +1,22 @@
+#!/bin/bash -l
+#PBS -N huggingface
+#PBS -q gpuq
+#PBS -l nodes=4:ppn=1:gpus=1
+#PBS -l feature=gpu
+#PBS -A Thayer
+#PBS -l walltime=5:00:00
+#PBS -M junhwi.kim.20@dartmouth.edu
+#PBS -m bea
+#PBS -j oe 
+cd /dartfs-hpc/rc/home/y/f002t4y/LyricGen
+
+wandb login b1548085189d7059e5adabb871c4136163f3494d
+python transformers/examples/pytorch/language-modeling/run_clm.py \
+--model_name_or_path distilgpt2 \
+--train_file data/all_lyrics_train.txt \
+--validation_file data/all_lyrics_val.txt \
+--do_train \
+--do_eval \
+--output_dir outputs/
+ 
+exit 0

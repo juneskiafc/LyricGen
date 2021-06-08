@@ -1,24 +1,23 @@
 from pathlib import Path
+import re
 from transformers import AutoTokenizer
 
-
-def add_tokens(tokenizer, dataset_file):
+def add_tokens(tokenizer, dataset_files):
     # holds all the words in the dataset.
     tokens = set()
 
-    with open(dataset_file, "r") as f:
-        for line in f:
-            # split words by spaces
-            words = line.strip("\n").split(" ")
-
-            # gpt-2 was pretrained to treat spaces as part of the token.
-            # This means each word after the first word needs a space in front of it.
-            for i, word in enumerate(words):
-                if word != "<eos>":
-                    if i == 0:
-                        tokens.add(word)
-                    else:
-                        tokens.add(f" {word}")
+    for dataset_file in dataset_files:
+        with open(dataset_file, "r") as f:
+            print(dataset_file)
+            for line in f:
+                line = line.strip("\n")
+                words = re.split(" ", line)
+                for i, word in enumerate(words):
+                    if word != "<eos>":
+                        if i == 0:
+                            tokens.add(word)
+                        else:
+                            tokens.add(f" {word}")
 
     tokenizer.add_tokens(list(tokens))
     return tokenizer
@@ -33,5 +32,6 @@ def save_vocab(tokenizer, save_dir="gpt2-tokenizer"):
 
 if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
-    tokenizer = add_tokens(tokenizer, "cleaned_dataset.txt")
+    data_files = list(Path("data").rglob("*.txt"))[:2]
+    tokenizer = add_tokens(tokenizer, data_files)
     save_vocab(tokenizer)

@@ -2,6 +2,7 @@ import numpy as np
 import random
 from pathlib import Path
 from datasets import load_metric
+import datasets
 
 
 def tokenize_function(examples, tokenizer):
@@ -18,10 +19,15 @@ def concat_dataset(data_files, output_file="data/all_lyrics.txt"):
     if Path(output_file).is_file():
         return
     
+    seen = set()
+
     with open("data/all_lyrics.txt", "w") as f:
         for data_file in data_files:
             with open(data_file, "r") as d:
-                f.writelines(d.readlines())
+                for line in d:
+                    if line not in seen:
+                        f.write(line)
+                        seen.add(line)
 
 def split_dataset(data_file="data/all_lyrics.txt", train_ratio=0.8):
     train_data_file = f"{Path(data_file).with_suffix('')}_train.txt"

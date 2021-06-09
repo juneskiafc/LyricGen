@@ -1,6 +1,8 @@
+from typing import Text
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import random
 from pathlib import Path
+from datasets import load_metric
 
 CHECKPOINT_DIR = "checkpoint-1000"
 N_TO_GENERATE = 6
@@ -87,9 +89,11 @@ def generate_experiment_for_subject(subject_idx,
                                     lyrics,
                                     experiment_out_dir,
                                     n_lines_to_generate=3,
-                                    n_lines_to_show_as_prior=3):
+                                    n_lines_to_show_as_prior=3,
+                                    bleurt_metric=None):
     generated_idxs = set(random.sample(range(N_TO_GENERATE), N_TO_GENERATE//2))
-
+    bleurt_out_file = open(f"{experiment_out_dir}/bleurt_{subject_idx}.txt", "w")
+    
     with open(f"{experiment_out_dir}/subject_{subject_idx}.txt", "w") as f:
         for n in range(N_TO_GENERATE):
             lyric = lyrics[n]
@@ -106,21 +110,36 @@ def generate_experiment_for_subject(subject_idx,
             
             prior = " ".join(split_prior)
 
+            model_output = model_predict(model, tokenizer, prior)
+            model_output = get_first_n_lines(model_output, n=n_lines_to_generate)
+            real_output = get_first_n_lines(" ".join(split_lyric[split_idx:]), n=n_lines_to_generate)
+
+            bleurt_results = bleurt_metric.compute(predictions=[model_output], references=[real_output])
+            bleurt = bleurt_results["scores"][0]
+            bleurt_out_file.write(str(round(bleurt, 2)) + "\n")
+
             if n in generated_idxs:
-                output = model_predict(model, tokenizer, prior)
-                output = get_first_n_lines(output, n=n_lines_to_generate)
+                output = model_output
                 mode = "GEN"
 
             else:
                 # get the next real line.
-                output = get_first_n_lines(" ".join(split_lyric[split_idx:]), n=n_lines_to_generate)
+                output = real_output
                 mode = "REAL"
 
             # get the last 3 lines preceding split_idx, for vis purposes
             condition_line = get_first_n_lines(prior, n=n_lines_to_show_as_prior, reverse=True)
             output = output.strip("\n")
 
+            print(f"\t[prior]: {condition_line}")
+            print(f"\t[model_outputs]: {model_output}")
+            print(f"\t[real_outputs]: {real_output}")
+
+            print("\n")
+
             f.write(f"[{mode}] {condition_line} --> {output}\n")
+
+    bleurt_out_file.close()
 
 def model_predict(model, tokenizer, input_string):
     input_ids = tokenizer.encode(input_string, return_tensors='pt')
@@ -146,6 +165,8 @@ def generate_experiments(file="data/all_lyrics_val.txt", experiment_out_dir="exp
 
     all_lyrics = read_lyrics(file)
     model, tokenizer = init_model_and_tokenizer()
+    print("Initializing BLEURT.")
+    bleurt_metric = load_metric("bleurt")
 
     print("Begin experiment generation.")
     print("-----------------")
@@ -156,7 +177,7 @@ def generate_experiments(file="data/all_lyrics_val.txt", experiment_out_dir="exp
         lyrics = get_random_lyrics(all_lyrics)
 
         print(f"\tgenerating experiment for subject {subject_idx}...")
-        generate_experiment_for_subject(subject_idx, model, tokenizer, lyrics, experiment_out_dir)
+        generate_experiment_for_subject(subject_idx, model, tokenizer, lyrics, experiment_out_dir, bleurt_metric=bleurt_metric)
         print(f"\tdone.")
 
 if __name__ == "__main__":

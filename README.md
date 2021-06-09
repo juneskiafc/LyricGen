@@ -1,4 +1,13 @@
 # LyricGen
+Download and install huggingface transformers **inside** the project root:  
+```console
+git clone https://github.com/huggingface/transformers.git  
+cd transformers  
+pip install .  
+cd transformers/examples/pytorch/language_modelling  
+pip install -r requirements.txt
+```  
+
 To train, at the project root:
 ```console
 python transformers/examples/pytorch/language_modelling/run_clm.py \  
@@ -9,3 +18,4 @@ python transformers/examples/pytorch/language_modelling/run_clm.py \
 --output_dir outputs/ \
 --block_size 512
 ```
+

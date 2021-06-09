@@ -1,19 +1,10 @@
-import numpy as np
+"""
+Utility functions that collects and splits the dataset.
+
+Author: Junhwi Kim (junhwi.kim.20@dartmouth.edu)
+"""
 import random
 from pathlib import Path
-from datasets import load_metric
-import datasets
-
-
-def tokenize_function(examples, tokenizer):
-    return tokenizer(examples["text"], padding="max_length", truncation=True)
-
-
-def compute_metrics(preds, labels):
-    metric = load_metric("bleurt")
-
-    predictions = np.argmax(preds, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
 
 def concat_dataset(data_files, output_file="data/all_lyrics.txt"):
     if Path(output_file).is_file():

@@ -1,10 +1,14 @@
-from typing import Text
+"""
+Code that creates the experiment text files, which are used to create the Google Forms and sent to human judges.
+
+Author: Junhwi Kim (junhwi.kim.20@dartmouth.edu)
+"""
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import random
 from pathlib import Path
 from datasets import load_metric
 
-CHECKPOINT_DIR = "checkpoint-1000"
+CHECKPOINT_DIR = "outputs/checkpoint-1000"
 N_TO_GENERATE = 6
 N_SUBJECTS = 10
 
@@ -44,6 +48,9 @@ def get_random_lyrics(all_lyrics):
     return lyrics
 
 def get_first_n_lines(lines, n=1, reverse=False):
+    """
+    Gets the first (or last, if reverse=True) n sentences in a long string.
+    """
     split_lines = lines.split(" ")
     output_line = []
 
@@ -92,7 +99,6 @@ def generate_experiment_for_subject(subject_idx,
                                     n_lines_to_show_as_prior=3,
                                     bleurt_metric=None):
     generated_idxs = set(random.sample(range(N_TO_GENERATE), N_TO_GENERATE//2))
-    bleurt_out_file = open(f"{experiment_out_dir}/bleurt_{subject_idx}.txt", "w")
     
     with open(f"{experiment_out_dir}/subject_{subject_idx}.txt", "w") as f:
         for n in range(N_TO_GENERATE):
@@ -110,13 +116,10 @@ def generate_experiment_for_subject(subject_idx,
             
             prior = " ".join(split_prior)
 
+            # generated and real examples.
             model_output = model_predict(model, tokenizer, prior)
             model_output = get_first_n_lines(model_output, n=n_lines_to_generate)
             real_output = get_first_n_lines(" ".join(split_lyric[split_idx:]), n=n_lines_to_generate)
-
-            bleurt_results = bleurt_metric.compute(predictions=[model_output], references=[real_output])
-            bleurt = bleurt_results["scores"][0]
-            bleurt_out_file.write(str(round(bleurt, 2)) + "\n")
 
             if n in generated_idxs:
                 output = model_output
@@ -138,8 +141,6 @@ def generate_experiment_for_subject(subject_idx,
             print("\n")
 
             f.write(f"[{mode}] {condition_line} --> {output}\n")
-
-    bleurt_out_file.close()
 
 def model_predict(model, tokenizer, input_string):
     input_ids = tokenizer.encode(input_string, return_tensors='pt')
